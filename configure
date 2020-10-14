@@ -1,0 +1,144 @@
+#!/usr/bin/env python
+
+
+import os
+import sys
+
+#default set
+prefix="/usr/local"
+debug=""
+optimization="-O2"
+flags=""
+openssl=""
+cc="gcc"
+cxx="g++"
+
+def usage():
+    print ("  --help                             print this message")
+    print ("")
+    print ("  --prefix=PATH                      set installation prefix")
+    print ("  --with-debug                       enable debug(-g)")
+    print ("  --without-optimization             disable optimization(-O2)")
+    print ("  --cc=CC                            use C compiler CC [gcc]")
+    print ("  --cxx=CXX                          use C compiler CXX [g++]")
+    print ("  --with-flags=flag                  custom flags of compiler")
+    print ("  --with-openssl=DIR                 set path to OpenSSL library sources")
+    print ("")
+    sys.exit(0)
+
+def GetArgs(args):
+    for arg in args:
+        al = arg.split("=")
+        if "configure" == al[0]:
+            continue
+        elif "./configure" == al[0]:
+            continue
+        elif "--help" == al[0] or "-h" == al[0]:
+            usage()
+        elif "--prefix" == al[0]:
+            if 2 == len(al):
+                global prefix
+                prefix = al[1]
+                continue
+        elif "--with-debug" == al[0]:
+            global debug
+            debug = "-g"
+            continue
+        elif "--without-optimization" == al[0]:
+            global optimization
+            optimization = ""
+            continue
+        elif "--cc" == al[0]:
+            global cc
+            cc = al[1]
+            continue
+        elif "--cxx" == al[0]:
+            global cxx
+            cxx = al[1]
+            continue
+        elif "--with-flags" == al[0]:
+            if 2 == len(al):
+                global flags
+                flags = al[1]
+                continue
+        elif "--with-openssl" == al[0]:
+            if 2 == len(al):
+                if os.path.exists(al[1]):
+                    global openssl
+                    openssl = al[1]
+                    continue
+                else:
+                    print "  openssl %s does not exist"%(al[1])
+                    print ""
+                    print ""
+                    usage()
+                
+        print "  %s is invalid"%(arg)
+        print ""
+        print ""
+        usage()
+
+
+if __name__ == "__main__":
+    GetArgs(sys.argv)
+
+    if "" != openssl:
+        os.system("rm -fr .ssl")
+        os.system("rm -fr .crypto")
+        os.system("rm -fr .include")
+
+        os.system("mkdir .ssl")
+        os.system("mkdir .crypto")
+
+        #create openssl of include
+        os.system("cd %s; mkdir .include; mkdir .include/openssl;cp include/openssl/* .include/openssl"%openssl)
+        os.system("mv %s/.include ./"%openssl)
+
+        os.system("cp -f %s/libssl.a .ssl"%openssl)
+        os.system("cd .ssl;ar x libssl.a; rm -f libssl.a")
+
+        os.system("cp -f %s/libcrypto.a .crypto"%openssl)
+        os.system("cd .crypto;ar x libcrypto.a; rm -f libcrypto.a")
+
+        os.system("rm -f sources/gsdm/include/utils/crypto.h")
+        os.system("cd sources/gsdm/include/utils/; ln -s crypto.h.custom crypto.h")
+    else:
+        os.system("rm -f sources/gsdm/include/utils/crypto.h")
+        os.system("cd sources/gsdm/include/utils/; ln -s crypto.h.sys crypto.h")
+
+    fd = open("config.mk", "w+")
+    fd.write("#project paths\nPROJECT_BASE_PATH=.\n")
+    configure = ""
+    for cv in sys.argv:
+        configure += cv + " "
+    fd.write("CONFIGURE=%s\n"%(configure))
+    fd.write("PREFIX=%s\n"%(prefix))
+    fd.write("CC=%s\n"%(cc))
+    fd.write("CXX=%s\n"%(cxx))
+    fd.write("FPIC = -fPIC\n")
+    opt = " %s %s -Wall %s"%(debug, optimization, flags)
+    fd.write("COMPILE_FLAGS = $(FPIC) %s\n"%opt)
+    fd.write("PLATFORM_DEFINES = -DLINUX -D__STDC_LIMIT_MACROS -DLITTLE_ENDIAN_BYTE_ALIGNED -D_DEBUG\n")
+    if "-g" != debug:
+        fd.write("ST_MODE = linux-optimized\n")
+    else:
+        fd.write("ST_MODE = linux-debug\n")
+
+
+    if "" != openssl:
+        fd.write("SSL_BASE=.ssl/*.o .crypto/*.o\n")
+        fd.write("OPENSSL_INCLUDE=-I$(PROJECT_BASE_PATH)/.include\n")
+     
+    fd.close()
+
+    fd = open("Makefile", "w+")
+    fd.write("include config.mk compile.mk")
+    fd.close()
+
+    fd = open("cleanupobjs.sh", "w+")
+    fd.write("for i in `find sources -type f -name \"*.o\"`;do rm -rfv $i;done\n")
+    fd.close()
+
+    fd = open("cpopenssl.sh", "w+")
+    fd.write("if [ -d .include ]; then\n cp -frv .include/openssl/ output/gsdm/\n fi\n")
+    fd.close()

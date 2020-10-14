@@ -1,0 +1,12 @@
+#daemon=true                    #Run in background.
+#detach=14,15                   #Detach cpu.
+#user=nobody                    #The User mode of running.
+log_color=true                 #Color of log.
+log_level=DEBUG                 #Level of log ( FATAL ERROR WARNING INFO DEBUG FINE FINEST ).
+#log_dir=/tmp/log               #The dir of log.
+log_port=30005
+
+mail_list=evansun@sohu-inc.com
+
+
+# [Custom]
