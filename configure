@@ -114,7 +114,7 @@ if __name__ == "__main__":
     fd.write("CONFIGURE=%s\n"%(configure))
     fd.write("PREFIX=%s\n"%(prefix))
     fd.write("CC=%s\n"%(cc))
-    fd.write("CXX=%s\n"%(cxx))
+    fd.write("CXX=%s -std=c++11\n"%(cxx))
     fd.write("FPIC = -fPIC\n")
     opt = " %s %s -Wall %s"%(debug, optimization, flags)
     fd.write("COMPILE_FLAGS = $(FPIC) %s\n"%opt)

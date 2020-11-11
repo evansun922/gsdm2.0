@@ -46,7 +46,7 @@ private:
       process = NULL; }
   };
 
-  typedef std::tr1::unordered_map<int, PoolHandle *> PoolHandleHash;
+  typedef std::unordered_map<int, PoolHandle *> PoolHandleHash;
   PoolHandleHash total_handles_;
   PoolHandleHash idle_handles_;
   PoolHandleHash use_handles_;

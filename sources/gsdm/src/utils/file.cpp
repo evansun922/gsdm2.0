@@ -129,7 +129,7 @@ bool GSDMFile::SeekAhead(int64_t count) {
 
 	file_.seekg(count, std::ios_base::cur);
 	if (file_.fail()) {
-		FATAL("Unable to seek ahead %"PRId64" bytes", count);
+		FATAL("Unable to seek ahead %" PRId64 " bytes", count);
 		return false;
 	}
 	return true;
@@ -148,7 +148,7 @@ bool GSDMFile::SeekBehind(int64_t count) {
 
 	file_.seekg((-1) * count, std::ios_base::cur);
 	if (file_.fail()) {
-		FATAL("Unable to seek behind %"PRId64" bytes", count);
+		FATAL("Unable to seek behind %" PRId64 " bytes", count);
 		return false;
 	}
 	return true;
@@ -162,7 +162,7 @@ bool GSDMFile::SeekTo(uint64_t position) {
 
 	file_.seekg(position, std::ios_base::beg);
 	if (file_.fail()) {
-		FATAL("Unable to seek to position %"PRIu64, position);
+		FATAL("Unable to seek to position %" PRIu64, position);
 		return false;
 	}
 
@@ -222,7 +222,7 @@ bool GSDMFile::ReadUI64(uint64_t *value) {
 bool GSDMFile::ReadBuffer(uint8_t *buffer, uint64_t count) {
 	file_.read((char *) buffer, count);
 	if (file_.fail()) {
-		FATAL("Unable to read %"PRIu64" bytes from the file. Cursor: %"PRIu64" (0x%"PRIx64"); %d (%s)",
+		FATAL("Unable to read %" PRIu64 " bytes from the file. Cursor: %" PRIu64 " (0x%" PRIx64 "); %d (%s)",
 				count, Cursor(), Cursor(), errno, strerror(errno));
 		return false;
 	}
@@ -366,7 +366,7 @@ bool GSDMFile::WriteString(const std::string &value) {
 bool GSDMFile::WriteBuffer(const uint8_t *buffer, uint64_t count) {
 	file_.write((char *) buffer, count);
 	if (file_.fail()) {
-		FATAL("Unable to write %"PRIu64" bytes to file", count);
+		FATAL("Unable to write %" PRIu64 " bytes to file", count);
 		return false;
 	}
 	return true;

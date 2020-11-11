@@ -70,7 +70,7 @@ private:
   bool ParseRespondHeader(char *header);
   bool CheckHeader();
 
-  typedef std::tr1::unordered_map<std::string, std::string> HTTPHeaderHash;
+  typedef std::unordered_map<std::string, std::string> HTTPHeaderHash;
   HTTPHeaderHash http_request_header_hash_;
   HTTPHeaderHash http_respond_header_hash_;
   HTTPHeaderHash http_args_hash_;

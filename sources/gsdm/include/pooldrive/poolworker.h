@@ -44,7 +44,7 @@ public:
   sockaddr_un address_wait_;
   socklen_t address_len_;
   
-  typedef std::tr1::unordered_map<int, PoolAccept *> PoolAcceptHash;
+  typedef std::unordered_map<int, PoolAccept *> PoolAcceptHash;
   PoolAcceptHash accept_hash_;
 };
 

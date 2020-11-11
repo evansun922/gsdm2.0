@@ -20,7 +20,7 @@ private:
   GsdmConfig();
 
   static GsdmConfig config_;
-  typedef std::tr1::unordered_map<std::string, std::string> ConfigMap;
+  typedef std::unordered_map<std::string, std::string> ConfigMap;
   ConfigMap config_map_;
 };
 

@@ -163,7 +163,7 @@ private:
     uint64_t frame_masked_extension_length;
   };
 
-  typedef std::tr1::unordered_map<std::string, std::string> WSHeaderHash;
+  typedef std::unordered_map<std::string, std::string> WSHeaderHash;
   WSHeaderHash ws_request_header_hash_;
   WSHeaderHash ws_respond_header_hash_;
   WSHeaderHash ws_header_args_hash_;

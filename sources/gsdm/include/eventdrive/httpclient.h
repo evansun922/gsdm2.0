@@ -7,7 +7,7 @@
 
 namespace gsdm {
 
-typedef std::tr1::unordered_map<std::string, std::string> HttpHeader;
+typedef std::unordered_map<std::string, std::string> HttpHeader;
 
 class HttpClient : public BaseProcess {
 public:

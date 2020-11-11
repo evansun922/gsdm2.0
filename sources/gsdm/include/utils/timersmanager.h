@@ -95,7 +95,7 @@ private:
   typedef std::multimap<gsdm_msec_t, TimerEvent *> Slot;
   Slot slots_;  
 
-  typedef std::tr1::unordered_map<uint32_t, TimeoutManager *> TimeoutManagerHash;
+  typedef std::unordered_map<uint32_t, TimeoutManager *> TimeoutManagerHash;
   TimeoutManagerHash timeout_manager_hash_;
 };
 

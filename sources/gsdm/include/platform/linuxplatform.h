@@ -19,8 +19,8 @@
 #include <map>
 #include <bitset>
 //#include <ext/hash_map>
-#include <tr1/unordered_map>
-#include <tr1/unordered_set>
+#include <unordered_map>
+#include <unordered_set>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -43,7 +43,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <pthread.h>
-#include <tr1/memory>
+#include <memory>
 #include <set>
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -83,7 +83,7 @@
 #define MAP_HAS2(m,k1,k2) ((MAP_HAS1((m),(k1))==true)?MAP_HAS1((m)[(k1)],(k2)):false)
 #define MAP_HAS3(m,k1,k2,k3) ((MAP_HAS1((m),(k1)))?MAP_HAS2((m)[(k1)],(k2),(k3)):false)
 #define FOR_MAP(m,k,v,i) for(std::map< k , v >::iterator i=(m).begin();i!=(m).end();++i)
-#define FOR_UNORDERED_MAP(m,k,v,i) for(std::tr1::unordered_map< k , v >::iterator i=(m).begin();i!=(m).end();++i)
+#define FOR_UNORDERED_MAP(m,k,v,i) for(std::unordered_map< k , v >::iterator i=(m).begin();i!=(m).end();++i)
 #define MAP_KEY(i) ((i)->first)
 #define MAP_VAL(i) ((i)->second)
 #define MAP_ERASE1(m,k) if(MAP_HAS1((m),(k))) (m).erase((k));

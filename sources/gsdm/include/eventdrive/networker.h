@@ -80,8 +80,8 @@ private:
   std::list<UNIXAcceptor *> unix_acceptor_list_;
   std::set<UDPCarrier *> udp_carrier_set_;
 
-  typedef std::tr1::unordered_map<int, CycleList<BaseCmd>*> ListHash;
-  typedef std::tr1::unordered_map<uint32_t, ListHash> WorkerQueue;
+  typedef std::unordered_map<int, CycleList<BaseCmd>*> ListHash;
+  typedef std::unordered_map<uint32_t, ListHash> WorkerQueue;
   WorkerQueue worker_queue_;
 };
 

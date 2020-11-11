@@ -200,7 +200,7 @@ bool PoolManager::Loop() {
   }
 
   // std::string name;
-  std::tr1::unordered_map<pid_t, PoolWorker *> w_hash;
+  std::unordered_map<pid_t, PoolWorker *> w_hash;
   do{
     if ( !installSignal(SIGPIPE, SIG_IGN) ) {
       ASSERT("Unable to install the SIGPIPE signal");
@@ -321,7 +321,7 @@ bool PoolManager::Loop() {
   while ( true ) {
     int status;
     pid_t pid = ::wait(&status);
-    std::tr1::unordered_map<pid_t, PoolWorker *>::iterator iter = w_hash.find(pid);
+    std::unordered_map<pid_t, PoolWorker *>::iterator iter = w_hash.find(pid);
     if ( w_hash.end() == iter ) {
       if ( true == *is_close_ )
         break;
