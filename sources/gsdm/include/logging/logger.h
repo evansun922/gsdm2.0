@@ -43,6 +43,7 @@ public:
   static int32_t GetLogLevel(); 
   static int32_t GetLogThreadLogFd(); 
   static void SetLogThreadLogFd(int fd); 
+  static int GetLevel() { return debug_level_; }
 
 private:
 
@@ -66,18 +67,28 @@ private:
   static bool no_cache_;
 };
 
-#define LOG(level,...) do{ GLogger::Log(level, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__); }while(0)
-#define FATAL(...) do{ GLogger::Log(_FATAL_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
+// #define LOG(level,...) do{ GLogger::Log(level, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__); }while(0)
+// #define FATAL(...) do{ GLogger::Log(_FATAL_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
 
-#define WARN(...) do{GLogger::Log(_WARNING_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
-#define INFO(...) do{GLogger::Log(_INFO_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
-#define DEBUG(...) do{GLogger::Log(_DEBUG_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
-#define FINE(...) do{GLogger::Log(_FINE_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
-#define FINEST(...) do{GLogger::Log(_FINEST_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
-#define ASSERT(...) do{GLogger::Log(_FATAL_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);assert(false);abort();}while(0) 
+// #define WARN(...) do{GLogger::Log(_WARNING_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
+// #define INFO(...) do{GLogger::Log(_INFO_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
+// #define DEBUG(...) do{GLogger::Log(_DEBUG_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
+// #define FINE(...) do{GLogger::Log(_FINE_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
+// #define FINEST(...) do{GLogger::Log(_FINEST_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);}while(0)
+// #define ASSERT(...) do{GLogger::Log(_FATAL_, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__);assert(false);abort();}while(0) 
+// //#define LOGHEX(data,len) do{ Logger::LogHex(_DEBUG_, data, len); }while(0)
+// #define STAT(...) do{ GLogger::Statistics(__VA_ARGS__); }while(0)
+
+#define LOG(level,...) do{if(level <= GLogger::GetLevel()){GLogger::Log(level, __FILE__, __LINE__, /*__func__,*/ __VA_ARGS__); }}while(0)
+#define FATAL(...)  LOG(_FATAL_, ##__VA_ARGS__)
+#define WARN(...)   LOG(_WARNING_, ##__VA_ARGS__)
+#define INFO(...)   LOG(_INFO_, ##__VA_ARGS__)
+#define DEBUG(...)  LOG(_DEBUG_, ##__VA_ARGS__)
+#define FINE(...)   LOG(_FINE_, ##__VA_ARGS__)
+#define FINEST(...) LOG(_FINEST_, ##__VA_ARGS__)
+#define ASSERT(...) LOG(_FATAL_, ##__VA_ARGS__)
 //#define LOGHEX(data,len) do{ Logger::LogHex(_DEBUG_, data, len); }while(0)
 #define STAT(...) do{ GLogger::Statistics(__VA_ARGS__); }while(0)
-
 
 
 #define NYI WARN("%s not yet implemented",__func__);
