@@ -593,7 +593,7 @@ bool installConfRereadSignal(SignalFnc pConfRereadSignalFnc) {
 }
 
 // for example: key=eth0 value=192.168.1.1
-void getAllHostIP(std::map<std::string , std::string> &ips) {
+void getAllHostIP(std::vector<std::string> &ips) {
   ips.clear();
   int s;
   struct ifconf conf;
@@ -617,7 +617,7 @@ void getAllHostIP(std::map<std::string , std::string> &ips) {
     if(((ifr->ifr_flags & IFF_LOOPBACK) == 0) && (ifr->ifr_flags & IFF_UP)) {
       char dst[128] = { 0 };
       inet_ntop(AF_INET, &sin->sin_addr, dst, 128);
-      ips[ifr->ifr_name] = dst;
+      ips.push_back(dst);
     }
     ifr++;
   }
@@ -626,30 +626,30 @@ void getAllHostIP(std::map<std::string , std::string> &ips) {
 }
 
 std::string getPublicIP() {
-  std::map<std::string , std::string> ips;
+  std::vector<std::string> ips;
   getAllHostIP(ips);
   std::string ip = "";
-  FOR_MAP(ips, std::string , std::string, i) {
-    if ( 0 == strncmp("172.", STR(MAP_VAL(i)), 4) ||
-         0 == strncmp("10.", STR(MAP_VAL(i)), 3) ||
-         0 == strncmp("192.168.", STR(MAP_VAL(i)), 8) ) {
+  for (int i = 0; i < (int)ips.size(); i++) {
+    if ( 0 == strncmp("172.", STR(ips[i]), 4) ||
+         0 == strncmp("10.", STR(ips[i]), 3) ||
+         0 == strncmp("192.168.", STR(ips[i]), 8) ) {
       continue;
     }
-    ip = MAP_VAL(i);
+    ip = ips[i];
     break;    
   }
   return ip;
 }
 
 std::string getPrivateIP() {
-  std::map<std::string , std::string> ips;
+  std::vector<std::string> ips;
   getAllHostIP(ips);
   std::string ip = "";
-  FOR_MAP(ips, std::string , std::string, i) {
-    if ( 0 == strncmp("172.", STR(MAP_VAL(i)), 4) ||
-         0 == strncmp("10.", STR(MAP_VAL(i)), 3) ||
-         0 == strncmp("192.168.", STR(MAP_VAL(i)), 8) ) {
-      ip = MAP_VAL(i);
+  for (int i = 0; i < (int)ips.size(); i++) { 
+    if ( 0 == strncmp("172.", STR(ips[i]), 4) ||
+         0 == strncmp("10.", STR(ips[i]), 3) ||
+         0 == strncmp("192.168.", STR(ips[i]), 8) ) {
+      ip = ips[i];
       break;
     }
   }
