@@ -593,7 +593,9 @@ bool installConfRereadSignal(SignalFnc pConfRereadSignalFnc) {
 }
 
 // for example: key=eth0 value=192.168.1.1
-void getAllHostIP(std::vector<std::string> &ips) {
+void getAllHostIP(std::multimap<std::string,std::string> &ips,
+                  bool find_lo,
+                  bool find_down) {
   ips.clear();
   int s;
   struct ifconf conf;
@@ -614,10 +616,11 @@ void getAllHostIP(std::vector<std::string> &ips) {
     struct sockaddr_in *sin = (struct sockaddr_in *)(&ifr->ifr_addr);
 
     ioctl(s, SIOCGIFFLAGS, ifr);
-    if(((ifr->ifr_flags & IFF_LOOPBACK) == 0) && (ifr->ifr_flags & IFF_UP)) {
+    if ((find_lo || (ifr->ifr_flags & IFF_LOOPBACK) == 0) &&
+        (find_down || ifr->ifr_flags & IFF_UP)) {
       char dst[128] = { 0 };
       inet_ntop(AF_INET, &sin->sin_addr, dst, 128);
-      ips.push_back(dst);
+      ips.insert(std::make_pair(ifr->ifr_name,dst));
     }
     ifr++;
   }
@@ -626,30 +629,30 @@ void getAllHostIP(std::vector<std::string> &ips) {
 }
 
 std::string getPublicIP() {
-  std::vector<std::string> ips;
-  getAllHostIP(ips);
+  std::multimap<std::string,std::string> ips;
+  getAllHostIP(ips, false, false);
   std::string ip = "";
-  for (int i = 0; i < (int)ips.size(); i++) {
-    if ( 0 == strncmp("172.", STR(ips[i]), 4) ||
-         0 == strncmp("10.", STR(ips[i]), 3) ||
-         0 == strncmp("192.168.", STR(ips[i]), 8) ) {
+  for (auto i = ips.begin(); i != ips.end(); ++i) {
+    if ( 0 == strncmp("172.", STR(MAP_VAL(i)), 4) ||
+         0 == strncmp("10.", STR(MAP_VAL(i)), 3) ||
+         0 == strncmp("192.168.", STR(MAP_VAL(i)), 8) ) {
       continue;
     }
-    ip = ips[i];
+    ip = MAP_VAL(i);
     break;    
   }
   return ip;
 }
 
 std::string getPrivateIP() {
-  std::vector<std::string> ips;
-  getAllHostIP(ips);
+  std::multimap<std::string,std::string> ips;
+  getAllHostIP(ips, false, false);
   std::string ip = "";
-  for (int i = 0; i < (int)ips.size(); i++) { 
-    if ( 0 == strncmp("172.", STR(ips[i]), 4) ||
-         0 == strncmp("10.", STR(ips[i]), 3) ||
-         0 == strncmp("192.168.", STR(ips[i]), 8) ) {
-      ip = ips[i];
+  for (auto i = ips.begin(); i != ips.end(); ++i) {
+    if ( 0 == strncmp("172.", STR(MAP_VAL(i)), 4) ||
+         0 == strncmp("10.", STR(MAP_VAL(i)), 3) ||
+         0 == strncmp("192.168.", STR(MAP_VAL(i)), 8) ) {
+      ip = MAP_VAL(i);
       break;
     }
   }

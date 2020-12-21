@@ -193,7 +193,9 @@ bool moveFile(const std::string &src, const std::string &dst);
 bool installSignal(int sig, SignalFnc pSignalFnc);
 bool installQuitSignal(SignalFnc pQuitSignalFnc);
 bool installConfRereadSignal(SignalFnc pConfRereadSignalFnc);
-void getAllHostIP(std::vector<std::string> &ips);
+void getAllHostIP(std::multimap<std::string,std::string> &ips,
+                  bool find_lo,
+                  bool find_down);
 std::string getPublicIP();
 std::string getPrivateIP();
 std::string getHostIPv4(uint32_t addr);
