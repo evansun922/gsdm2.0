@@ -137,6 +137,57 @@ bool EventManager::Initialize(int argc, char *argv[], void (*usage)(char *prog),
     }
   }
 
+  // set log
+  std::string log_dir = GsdmConfig::GetConfig()->GetString("log_dir", "");
+  int min = INT32_MAX;
+  int index = 0;
+  if (cpu_.empty()) {
+    index = -1;
+  } else {
+    for (int i = 0; i < (int)cpu_.size(); i++) {
+      if ( min > cpu_[i] ) {
+        min = cpu_[i];
+        index = i;
+      }
+    }
+    cpu_[index] += 1;
+  }
+
+  struct timespec tp = {0};
+  if (clock_gettime(CLOCK_MONOTONIC, &tp) != 0) {
+    FATAL("Failed to clock_gettime %d", errno);
+    return false;
+  }
+
+  uint64_t tp_value = tp.tv_sec*1000000000 + tp.tv_nsec;
+  std::string log_unix_path = format("%s/gsdm_log_%lu_%u",
+                                     GSDM_BACK_ROOT_DIR,
+                                     tp_value,
+                                     getpid());
+  bool log_color = GsdmConfig::GetConfig()->GetBool("log_color", false);
+  int log_level = _INFO_;
+  std::string log_level_str = GsdmConfig::GetConfig()->GetString("log_level", "INFO");
+  trim(log_level_str);
+  if ( "FATAL" == log_level_str )
+    log_level = _FATAL_;
+  else if ( "ERROR" == log_level_str )
+    log_level = _ERROR_;
+  else if ( "WARNING" == log_level_str )
+    log_level = _WARNING_;
+  else if ( "INFO" == log_level_str )
+    log_level = _INFO_;
+  else if ( "DEBUG" == log_level_str )
+    log_level = _DEBUG_;
+  else if ( "FINE" == log_level_str )
+    log_level = _FINE_;
+  else if ( "FINEST" == log_level_str )
+    log_level = _FINEST_; 
+
+  if ( !GLogger::Initialize(log_unix_path, log_dir, log_level, log_color, index) ) {
+    FATAL("Logger::Initialize(%s, %d) failed", STR(log_unix_path), index);
+    return false;
+  }
+
   return true;
 }
 
@@ -197,44 +248,44 @@ bool EventManager::Loop() {
       return false;
     }
 
-    std::string log_dir = GsdmConfig::GetConfig()->GetString("log_dir", "");
-    int min = INT32_MAX;
-    int index = 0;
-    if (cpu_.empty()) {
-      index = -1;
-    } else {
-      for (int i = 0; i < (int)cpu_.size(); i++) {
-        if ( min > cpu_[i] ) {
-          min = cpu_[i];
-          index = i;
-        }
-      }
-      cpu_[index] += 1;
-    }
-    std::string log_unix_path = format("%s/gsdm_log_%u", GSDM_BACK_ROOT_DIR, getpid());
-    bool log_color = GsdmConfig::GetConfig()->GetBool("log_color", false);
-    int log_level = _INFO_;
-    std::string log_level_str = GsdmConfig::GetConfig()->GetString("log_level", "INFO");
-    trim(log_level_str);
-    if ( "FATAL" == log_level_str )
-      log_level = _FATAL_;
-    else if ( "ERROR" == log_level_str )
-      log_level = _ERROR_;
-    else if ( "WARNING" == log_level_str )
-      log_level = _WARNING_;
-    else if ( "INFO" == log_level_str )
-      log_level = _INFO_;
-    else if ( "DEBUG" == log_level_str )
-      log_level = _DEBUG_;
-    else if ( "FINE" == log_level_str )
-      log_level = _FINE_;
-    else if ( "FINEST" == log_level_str )
-      log_level = _FINEST_; 
+    // std::string log_dir = GsdmConfig::GetConfig()->GetString("log_dir", "");
+    // int min = INT32_MAX;
+    // int index = 0;
+    // if (cpu_.empty()) {
+    //   index = -1;
+    // } else {
+    //   for (int i = 0; i < (int)cpu_.size(); i++) {
+    //     if ( min > cpu_[i] ) {
+    //       min = cpu_[i];
+    //       index = i;
+    //     }
+    //   }
+    //   cpu_[index] += 1;
+    // }
+    // std::string log_unix_path = format("%s/gsdm_log_%u", GSDM_BACK_ROOT_DIR, getpid());
+    // bool log_color = GsdmConfig::GetConfig()->GetBool("log_color", false);
+    // int log_level = _INFO_;
+    // std::string log_level_str = GsdmConfig::GetConfig()->GetString("log_level", "INFO");
+    // trim(log_level_str);
+    // if ( "FATAL" == log_level_str )
+    //   log_level = _FATAL_;
+    // else if ( "ERROR" == log_level_str )
+    //   log_level = _ERROR_;
+    // else if ( "WARNING" == log_level_str )
+    //   log_level = _WARNING_;
+    // else if ( "INFO" == log_level_str )
+    //   log_level = _INFO_;
+    // else if ( "DEBUG" == log_level_str )
+    //   log_level = _DEBUG_;
+    // else if ( "FINE" == log_level_str )
+    //   log_level = _FINE_;
+    // else if ( "FINEST" == log_level_str )
+    //   log_level = _FINEST_; 
 
-    if ( !GLogger::Initialize(log_unix_path, log_dir, log_level, log_color, index) ) {
-      FATAL("Logger::Initialize(%s, %d) failed", STR(log_unix_path), index);
-      return false;
-    }
+    // if ( !GLogger::Initialize(log_unix_path, log_dir, log_level, log_color, index) ) {
+    //   FATAL("Logger::Initialize(%s, %d) failed", STR(log_unix_path), index);
+    //   return false;
+    // }
    
     // change user
     std::string user = GsdmConfig::GetConfig()->GetString("user", "");
