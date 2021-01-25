@@ -6,7 +6,7 @@
 namespace gsdm {
 
 HTTPProtocol::HTTPProtocol() 
-  :content_length_(0),code_(0) {
+  :content_length_(-1),code_(0) {
   
 }
 
@@ -18,11 +18,12 @@ bool HTTPProtocol::Handler() {
   return false;
 }
 
-bool HTTPProtocol::HandlerRespond(int code, const std::string &data) {
+bool HTTPProtocol::HandlerRespond(const char *data, int len) {
   return false;
 }
 
-bool HTTPProtocol::SendHead(const std::string &code, const std::string &content_type) {
+bool HTTPProtocol::SendHead(const std::string &code,
+                            const std::string &content_type) {
   char date[128] = {0};
   time_t t = time(0);
   struct tm tm;
@@ -39,12 +40,6 @@ bool HTTPProtocol::SendHead(const std::string &code, const std::string &content_
   respond << "Server: libgsdm\r\n";
   respond << "Date: " << date << "\r\n";
   respond << "Content-Type: " << content_type << "\r\n";
-  // if ( (uint32_t)-1 != len ) {
-  //   respond << "Content-Length: " << len << "\r\n";
-  // } else {
-  //   respond << "Transfer-Encoding: chunked\r\n";
-  // }
-  // respond << "Connection: keep-alive\r\n";
 
   FOR_UNORDERED_MAP(http_respond_header_hash_,std::string,std::string,i) {
     respond << MAP_KEY(i) << ": " << MAP_VAL(i) << "\r\n";
@@ -72,13 +67,13 @@ bool HTTPProtocol::SendChunked(const void *data, uint32_t len) {
 }
 
 bool HTTPProtocol::ParseUrl(const std::string &url) {
-  http_request_header_hash_.clear();  
-  content_length_ = 0;
+  http_request_header_hash_.clear();
+  content_length_ = -1;
   code_ = 0;
   char *find, str[4096] = { 0 };
   strncpy(str, STR(url)+sizeof("http:/"), 4095);
   find = strstr(str, "/");
-  if ( NULL == find ) {
+  if (find == nullptr) {
     WARN("url of format is error, %s", STR(url));
     return false;
   }
@@ -86,7 +81,7 @@ bool HTTPProtocol::ParseUrl(const std::string &url) {
   // find++;
 
   char *v = strstr(str, ":");
-  if ( NULL == v ) {
+  if (v == nullptr) {
     http_request_header_hash_[HTTP_HEADER_HOST] = str;
     http_request_header_hash_[HTTP_HEADER_PORT] = "80";
   } else {
@@ -98,16 +93,24 @@ bool HTTPProtocol::ParseUrl(const std::string &url) {
   
   *find = '/';
   http_request_header_hash_[HTTP_HEADER_URI] = find;
+  http_request_header_hash_["User-Agent"] = "libgsdm";
+  http_request_header_hash_["Accept"] = "*/*";
+  http_request_header_hash_["Connection"] = "keep-alive";
   return true;
 }
 
 bool HTTPProtocol::HTTPGet() {
   std::stringstream request;
   request << "GET " << http_request_header_hash_[HTTP_HEADER_URI] << " HTTP/1.1\r\n";
-  request << "User-Agent: libgsdm\r\n";
-  request << "Host: " << http_request_header_hash_[HTTP_HEADER_HOST] << "\r\n";
-  request << "Accept: */*\r\n";
-  request << "Connection: keep-alive\r\n\r\n";
+  for (auto it = http_request_header_hash_.begin();
+       it != http_request_header_hash_.end(); ++it) {
+    if (MAP_KEY(it) == HTTP_HEADER_PORT)
+      continue;
+    if (MAP_KEY(it) == HTTP_HEADER_URI)
+      continue;
+    request << MAP_KEY(it) << ": " << MAP_VAL(it) << "\r\n";
+  }
+  request << "\r\n";
   
   std::string v = request.str();
   return SendHTTPData(STR(v), v.length());
@@ -121,7 +124,13 @@ std::string HTTPProtocol::GetRequestHeader(const std::string &key) {
   return http_request_header_hash_[key];
 }
 
-void HTTPProtocol::SetRespondHeader(const std::string &key, const std::string &value) {
+void HTTPProtocol::SetRequestHeader(const std::string &key,
+                                    const std::string &value) {
+  http_request_header_hash_[key] = value;
+}
+
+void HTTPProtocol::SetRespondHeader(const std::string &key,
+                                    const std::string &value) {
   http_respond_header_hash_[key] = value;
 }
 
@@ -140,6 +149,10 @@ void HTTPProtocol::SetRespondHeaderForConnectionKeepalive() {
 
 void HTTPProtocol::SetRespondHeaderForConnectionClose() {
   SetRespondHeader("Connection", "close");
+}
+
+int HTTPProtocol::GetHttpCode() {
+  return code_;
 }
 
 int HTTPProtocol::HandlerProtocol(uint8_t *data, uint32_t len) {  
@@ -169,40 +182,49 @@ int HTTPProtocol::HandlerProtocol(uint8_t *data, uint32_t len) {
 
 int HTTPProtocol::HandlerProtocolRespond(uint8_t *data, uint32_t len) {
   uint8_t *tmp = data;
-  if ( 0 == content_length_ ) {
-    if ( 4 > len )
+  if (content_length_ == -1) {
+    if (4 > len)
       return 0;
 
     uint8_t bak = data[len-1];
     data[len-1] = 0;
     char *find = strstr((char *)data, "\r\n\r");
-    if ( NULL == find ) {
+    if (find == nullptr) {
       data[len-1] = bak;
       return 0;
     }
 
     *find = 0;
     data[len-1] = bak; 
-    if ( !ParseRespondHeader((char *)data) ) { 
+    if (!ParseRespondHeader((char *)data)) { 
       return -1;
     }
     data = (uint8_t *)find+4;
     len -= (data-tmp);
 
-    if ( http_respond_header_hash_.end() == http_respond_header_hash_.find(HTTP_CONTENT_LENGTH) ) {
+    if (http_respond_header_hash_.end() == 
+        http_respond_header_hash_.find(HTTP_CONTENT_LENGTH)) {
       WARN("Only support Content-Length");
       return -1;
     }
-    content_length_ = atoi(STR(http_respond_header_hash_[HTTP_CONTENT_LENGTH]));
+    content_length_ =
+      atoi(STR(http_respond_header_hash_[HTTP_CONTENT_LENGTH]));
   }
 
-  if ( content_length_ != (int)len ) {
+  if (content_length_ == 0) {
+    // chunked TODO
+    // if (!HandlerRespond(v)) {
+    //   return -1;
+    // }
+    return -1;
+  }
+
+  if (content_length_ > (int)len) {
     return data - tmp;
   }
     
   // for caller
-  std::string v((char *)data, len);
-  if ( !HandlerRespond(code_, v) ) {
+  if (!HandlerRespond((char *)data, content_length_)) {
     return -1;
   }
 
@@ -215,7 +237,7 @@ bool HTTPProtocol::ParseHeader(char *header) {
 
   // GET /chat?args=abc HTTP/1.1
   char *tmp2, *tmp1 = strstr(header, "\r\n");
-  if ( NULL == tmp1 )
+  if (tmp1 == nullptr)
     return false;
   *tmp1 = 0;
   tmp2 = tmp1 + 2;
@@ -223,7 +245,7 @@ bool HTTPProtocol::ParseHeader(char *header) {
   // app
   header += sizeof("GET");
   tmp1 = strstr(header, " ");
-  if ( NULL == tmp1 )
+  if (tmp1 == nullptr)
     return false;
   *tmp1 = 0;
 
@@ -232,7 +254,7 @@ bool HTTPProtocol::ParseHeader(char *header) {
   // header = decode;
   
   char *find = strstr(header, "?");
-  if ( NULL == find ) {  
+  if (find == nullptr) {
     http_request_header_hash_[HTTP_HEADER_URI] = header;
   } else {
     *find = 0;
@@ -240,10 +262,10 @@ bool HTTPProtocol::ParseHeader(char *header) {
     ++find;
     http_request_header_hash_[HTTP_HEADER_ARGS] = find;
     char *arg1, *arg2;
-    while ( NULL != (arg1 = strstr(find, "&")) ) {
+    while (nullptr != (arg1 = strstr(find, "&"))) {
       *arg1 = 0;
       arg2 = strstr(find, "=");
-      if ( NULL == arg2 ) {
+      if (nullptr == arg2) {
         http_args_hash_[find] = "";
       } else {
         *arg2 = 0;
@@ -254,7 +276,7 @@ bool HTTPProtocol::ParseHeader(char *header) {
     }
 
     arg2 = strstr(find, "=");
-    if ( NULL == arg2 ) {
+    if (arg2 == nullptr) {
       http_args_hash_[find] = "";
     } else {
       *arg2 = 0;
@@ -269,11 +291,11 @@ bool HTTPProtocol::ParseHeader(char *header) {
 
   // Host: 10.16.14.183:9999
   header = tmp2;
-  while ( NULL != (tmp1 = strstr(header, "\r\n")) ) {
+  while (nullptr != (tmp1 = strstr(header, "\r\n"))) {
     *tmp1 = 0;
     tmp2 = tmp1 + 2;
     tmp1 = strstr(header, ":");
-    if ( NULL == tmp1 )
+    if (tmp1 == nullptr)
       return false;
     *tmp1 = 0;
     http_request_header_hash_[header] = tmp1 + 2;
@@ -281,7 +303,7 @@ bool HTTPProtocol::ParseHeader(char *header) {
   }
 
   tmp1 = strstr(header, ":");
-  if ( NULL == tmp1 )
+  if (tmp1 == nullptr)
     return true;
   *tmp1 = 0;
   http_request_header_hash_[header] = tmp1 + 2;
@@ -302,7 +324,7 @@ bool HTTPProtocol::ParseRespondHeader(char *header) {
   
   http_respond_header_hash_.clear();
   char *tmp2, *tmp1 = strstr(header, "\r\n");
-  if ( NULL == tmp1 )
+  if (tmp1 == nullptr)
     return false;
   *tmp1 = 0;
   tmp2 = tmp1 + 2;
@@ -310,17 +332,17 @@ bool HTTPProtocol::ParseRespondHeader(char *header) {
   // app
   header += sizeof("HTTP/1.1");
   tmp1 = strstr(header, " ");
-  if ( NULL == tmp1 )
+  if (tmp1 == nullptr)
     return false;
   *tmp1 = 0;
   code_ = atoi(header);
 
   header = tmp2;
-  while ( NULL != (tmp1 = strstr(header, "\r\n")) ) {
+  while (nullptr != (tmp1 = strstr(header, "\r\n"))) {
     *tmp1 = 0;
     tmp2 = tmp1 + 2;
     tmp1 = strstr(header, ":");
-    if ( NULL == tmp1 )
+    if (tmp1 == nullptr)
       return false;
     *tmp1 = 0;
     http_respond_header_hash_[header] = tmp1 + 2;
@@ -328,7 +350,7 @@ bool HTTPProtocol::ParseRespondHeader(char *header) {
   }
 
   tmp1 = strstr(header, ":");
-  if ( NULL == tmp1 )
+  if (tmp1 == nullptr)
     return false;
   *tmp1 = 0;
   http_respond_header_hash_[header] = tmp1 + 2;

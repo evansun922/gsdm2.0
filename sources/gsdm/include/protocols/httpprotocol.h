@@ -40,24 +40,35 @@ public:
   
   HTTPProtocol();
   virtual ~HTTPProtocol();
-  virtual bool Handler();
-  virtual bool HandlerRespond(int code, const std::string &data);
 
+  // server mode
+  virtual bool Handler();
   // if len == 0 is chunked mode
-  bool SendHead(const std::string &code, const std::string &content_type);
+  bool SendHead(const std::string &code,
+                const std::string &content_type);
   bool SendContent(const void *data, uint32_t len);
   bool SendChunked(const void *data, uint32_t len);
+
+  // client mode
+  virtual bool HandlerRespond(const char *data, int len);
   bool ParseUrl(const std::string &url);
   bool HTTPGet();
 
 protected:
   std::string GetRequestArgs(const std::string &key);
   std::string GetRequestHeader(const std::string &key);
-  void SetRespondHeader(const std::string &key, const std::string &value);
+
+  void SetRequestHeader(const std::string &key,
+                        const std::string &value);
+
+  void SetRespondHeader(const std::string &key,
+                        const std::string &value);
   void SetRespondHeaderForContentLength(uint64_t length);
   void SetRespondHeaderForTransferEncoding();
   void SetRespondHeaderForConnectionKeepalive();
   void SetRespondHeaderForConnectionClose();
+
+  int GetHttpCode();
   virtual bool SendHTTPData(const void *data, uint32_t len) = 0;
   /*
    * return -1 is error, else return used length
@@ -74,7 +85,7 @@ private:
   HTTPHeaderHash http_request_header_hash_;
   HTTPHeaderHash http_respond_header_hash_;
   HTTPHeaderHash http_args_hash_;
-  int content_length_;
+  int content_length_; // default -1, 0 is chunked
   int code_;
 };
 
